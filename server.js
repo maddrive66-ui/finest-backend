@@ -19,6 +19,10 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get("/", (req, res) => {
+  res.send("✅ Finest backend is running");
+});
+
 // --------------------------------------------
 //  PAID USERS CACHE (FOR BOT)
 // --------------------------------------------
@@ -259,4 +263,5 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend running on port ${PORT}`);
+
 });
