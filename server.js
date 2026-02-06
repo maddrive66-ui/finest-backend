@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import bodyParser from "body-parser";
 import cors from "cors";
-import fetch from "node-fetch"; // REMOVE IF NODE 18+
 
 dotenv.config();
 
@@ -202,9 +201,8 @@ app.post("/freepack", async (req, res) => {
 //  START SERVER
 // --------------------------------------------
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Backend running on port ${PORT}`);
 });
-
