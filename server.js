@@ -25,6 +25,7 @@ app.get("/", (req, res) => {
 //  PAID USERS CACHE (FOR BOT)
 // --------------------------------------------
 const paidUsers = {};
+const freeUsers = {};
 
 // --------------------------------------------
 //  DISCORD WEBHOOK SENDER
@@ -206,3 +207,4 @@ const PORT = process.env.PORT;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Backend running on port ${PORT}`);
 });
+
