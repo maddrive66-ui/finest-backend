@@ -1,7 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
-import { GoogleSpreadsheet } from "google-spreadsheet";
 import bodyParser from "body-parser";
 import cors from "cors";
 import fetch from "node-fetch"; // REMOVE IF NODE 18+
@@ -42,18 +41,6 @@ async function sendWebhook(url, payload) {
   } catch (err) {
     console.log("WEBHOOK ERROR:", err.message);
   }
-}
-
-// --------------------------------------------
-//   GOOGLE SHEETS
-// --------------------------------------------
-const doc = new GoogleSpreadsheet(process.env.SHEET_ID);
-
-async function authSheets() {
-  await doc.useServiceAccountAuth({
-    client_email: process.env.GOOGLE_CLIENT_EMAIL,
-    private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\r?\n/g, "\n"),
-  });
 }
 
 // --------------------------------------------
@@ -103,29 +90,6 @@ app.post("/finalize", async (req, res) => {
       delete paidUsers[discord_id];
     }, 1000 * 60 * 60); // auto delete after 1 hour
     
-    // WRITE TO SHEETS
-    await authSheets();
-    await doc.loadInfo();
-    const sheet = doc.sheetsByIndex[0];
-
-    await sheet.addRow({
-      Timestamp: new Date().toISOString(),
-      Name: name,
-      Email: email,
-      Discord: discord_name,
-      "Discord ID": discord_id,
-      Product: product,
-      Amount: amount,
-      "Payment ID": payment_id,
-      Status: "PENDING",
-      Delivery: "PENDING",
-      Staff: "NONE",
-      Notes: "",
-      AddedToServer: "",
-      RoleAssigned: "",
-      TicketOpened: ""
-    });
-
     // DISCORD WEBHOOK
     await sendWebhook(process.env.WEBHOOK_PAID, {
       embeds: [{
@@ -209,27 +173,6 @@ app.post("/freepack", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    await authSheets();
-    await doc.loadInfo();
-    const sheet = doc.sheetsByIndex[0];
-
-    await sheet.addRow({
-      Timestamp: new Date().toISOString(),
-      Name: name,
-      Email: email,
-      Discord: discord,
-      "Discord ID": discord_id,
-      Product: "FREE PACK",
-      Amount: "0",
-      "Payment ID": "",
-      Status: "FREE",
-      Delivery: "DIRECT DRIVE",
-      Staff: "NONE",
-      Notes: "",
-      AddedToServer: "",
-      RoleAssigned: "",
-      TicketOpened: ""
-    });
 
     if (process.env.WEBHOOK_FREE) {
       await sendWebhook(process.env.WEBHOOK_FREE, {
@@ -261,7 +204,7 @@ app.post("/freepack", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Backend running on port ${PORT}`);
-
 });
+
