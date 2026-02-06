@@ -143,22 +143,39 @@ app.post("/finalize", async (req, res) => {
 // --------------------------------------------
 //  BOT PAYMENT CHECK (READ-ONLY)
 // --------------------------------------------
-app.get("/check-payment/:discordId", (req, res) => {
-  const record = paidUsers[req.params.discordId];
 
-  if (!record) {
-    return res.json({ paid: false });
+app.get("/check-payment/:discordId", (req, res) => {
+  const id = req.params.discordId;
+
+  // ✅ PAID USER
+  if (paidUsers[id]) {
+    const record = paidUsers[id];
+    return res.json({
+      paid: true,
+      type: "PAID",
+      data: {
+        product: record.product,
+        amount: record.amount,
+        payment_id: record.payment_id,
+        status: record.status
+      }
+    });
   }
 
-  return res.json({
-    paid: true,
-    data: {
-      product: record.product,
-      amount: record.amount,
-      payment_id: record.payment_id,
-      status: record.status
-    }
-  });
+  // ✅ FREE USER
+  if (freeUsers[id]) {
+    return res.json({
+      paid: true,
+      type: "FREE",
+      data: {
+        product: "FREE PACK",
+        status: "FREE"
+      }
+    });
+  }
+
+  // ❌ NOT FOUND
+  return res.json({ paid: false });
 });
 
 // --------------------------------------------
@@ -207,4 +224,5 @@ const PORT = process.env.PORT;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Backend running on port ${PORT}`);
 });
+
 
