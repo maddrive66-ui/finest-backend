@@ -181,6 +181,7 @@ app.get("/check-payment/:discordId", (req, res) => {
 // --------------------------------------------
 //  FREE PACK SUBMIT (UNCHANGED)
 // --------------------------------------------
+
 app.post("/freepack", async (req, res) => {
   try {
     const { name, email, discord, discordId, discord_id: raw_id } = req.body;
@@ -190,20 +191,43 @@ app.post("/freepack", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
+    // 🔐 FIX 3B — Discord ID sanity check (backend)
+    if (!/^\d{17,19}$/.test(discord_id)) {
+        return res.status(400).json({
+            error: "Invalid Discord ID format"
+        });
+    }  
+    
+    // ⭐ FIX 1 — STORE FREE PACK USER
+    freeUsers[discord_id] = {
+      name,
+      email,
+      discord,
+      discord_id,
+      product: "FREE PACK",
+      status: "FREE",
+      createdAt: Date.now()
+    };
+
+    setTimeout(() => {
+      delete freeUsers[discord_id];
+    }, 1000 * 60 * 60);
 
     if (process.env.WEBHOOK_FREE) {
       await sendWebhook(process.env.WEBHOOK_FREE, {
-        embeds: [{
-          title: "🎁 Free Pack Claimed",
-          color: 0x5865F2,
-          fields: [
-            { name: "Name", value: name },
-            { name: "Email", value: email },
-            { name: "Discord", value: discord },
-            { name: "Discord ID", value: discord_id }
-          ],
-          timestamp: new Date().toISOString()
-        }]
+        embeds: [
+          {
+            title: "🎁 Free Pack Claimed",
+            color: 0x5865f2,
+            fields: [
+              { name: "Name", value: name },
+              { name: "Email", value: email },
+              { name: "Discord", value: discord },
+              { name: "Discord ID", value: discord_id }
+            ],
+            timestamp: new Date().toISOString()
+          }
+        ]
       });
     }
 
@@ -224,5 +248,6 @@ const PORT = process.env.PORT;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Backend running on port ${PORT}`);
 });
+
 
 
