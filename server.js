@@ -1,3 +1,4 @@
+import OpenAI from "openai";
 import express from "express";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
@@ -5,6 +6,10 @@ import bodyParser from "body-parser";
 import cors from "cors";
 
 dotenv.config();
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
 const app = express();
 app.use(cors());
@@ -240,6 +245,89 @@ app.post("/freepack", async (req, res) => {
 });
 
 // --------------------------------------------
+//  AI CHAT ROUTE (UPDATED WITH REAL STORE DATA)
+// --------------------------------------------
+
+const userRateLimit = {};
+
+app.post("/ai-chat", async (req, res) => {
+  try {
+    const { message, history } = req.body;
+
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ reply: "Invalid message." });
+    }
+
+    const userIP = req.ip;
+    const now = Date.now();
+
+    // Basic rate limit (2 sec)
+    if (userRateLimit[userIP] && now - userRateLimit[userIP] < 2000) {
+      return res.status(429).json({ reply: "Please slow down." });
+    }
+    userRateLimit[userIP] = now;
+
+    const safeHistory = Array.isArray(history)
+      ? history.slice(-10)
+      : [];
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `
+You are the official AI assistant for Finest XD Store.
+
+You must only answer about Finest Store products and services.
+
+========== PREMIUM PACKS ==========
+Finest Sensi Pro – ₹1099
+Optimization Pro – ₹699
+Prime Pack – ₹2899
+
+========== BASIC PACKS ==========
+Sensi Pack – ₹399
+Optimization Pack – ₹199
+Free Pack – ₹0
+
+========== FINEST SOLE ==========
+Finest Exo Emulator – ₹499
+Finest Exo Reg – ₹399
+
+========== OTHER SERVICES ==========
+Basic Discord Server – ₹399
+Premium Discord Server – ₹799
+Finest Discord Server – ₹1099
+Free Fire Custom ID – Starting from ₹1000
+
+Instructions:
+- Be short and clear.
+- Explain benefits when asked.
+- If question unrelated, reply:
+"I can only help with Finest XD Store services."
+`
+        },
+        ...safeHistory,
+        { role: "user", content: message }
+      ],
+      temperature: 0.4,
+      max_tokens: 300
+    });
+
+    return res.json({
+      reply: response.choices[0].message.content
+    });
+
+  } catch (error) {
+    console.error("AI Error:", error.message);
+    return res.status(500).json({
+      reply: "⚠️ AI service temporarily unavailable."
+    });
+  }
+});
+
+// --------------------------------------------
 //  START SERVER
 // --------------------------------------------
 
@@ -248,6 +336,7 @@ const PORT = process.env.PORT;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Backend running on port ${PORT}`);
 });
+
 
 
 
